@@ -1,5 +1,7 @@
 
-/* 0. 工具与常量 */
+/* ============================================================
+   0. 工具与常量
+   ============================================================ */
 const $  = (s, c=document) => c.querySelector(s);
 const $$ = (s, c=document) => Array.from(c.querySelectorAll(s));
 const STORE_KEY = 'lzm-resume-state-v1';
@@ -29,7 +31,9 @@ function scheduleSave(){
   }, 400);
 }
 
-/* 1. 编辑模式开关 */
+/* ============================================================
+   1. 编辑模式开关
+   ============================================================ */
 let editMode = false;
 function setEditable(scope, on){
   $$('[data-editable]', scope).forEach(el=>el.setAttribute('contenteditable', on?'true':'false'));
@@ -48,7 +52,7 @@ function toggleEdit(on){
 $('#editToggle').addEventListener('click', ()=>toggleEdit(!editMode));
 $('#doneBtn').addEventListener('click', ()=>toggleEdit(false));
 
-/* 粘贴强制纯文本 */
+/* 粘贴强制纯文本，避免带入外部样式 */
 document.addEventListener('paste', e=>{
   if(!e.target.closest('[data-editable]')) return;
   e.preventDefault();
@@ -56,7 +60,9 @@ document.addEventListener('paste', e=>{
   document.execCommand('insertText', false, text);
 });
 
-/* 2. 文本编辑 */
+/* ============================================================
+   2. 文本编辑（事件委托）
+   ============================================================ */
 document.addEventListener('input', e=>{
   if(e.target.matches('[data-editable]')){ scheduleSave(); }
   if(e.target.matches('[data-level-range]')){
@@ -69,7 +75,9 @@ document.addEventListener('input', e=>{
   }
 });
 
-/* 3. 删除块 */
+/* ============================================================
+   3. 删除块（事件委托）
+   ============================================================ */
 document.addEventListener('click', e=>{
   const delBtn = e.target.closest('[data-del]');
   if(delBtn){
@@ -85,7 +93,9 @@ document.addEventListener('click', e=>{
   }
 });
 
-/* 4. 模板：新增条目 */
+/* ============================================================
+   4. 模板：新增条目
+   ============================================================ */
 function expTemplate(){
   const d = document.createElement('div');
   d.className = 'tl-item block reveal in';
@@ -144,7 +154,9 @@ function eduTemplate(){
   return d;
 }
 
-/* 5. 添加按钮 */
+/* ============================================================
+   5. 添加按钮
+   ============================================================ */
 $('#addExp').addEventListener('click', ()=>{
   const node = expTemplate();
   $('#expList').appendChild(node);
@@ -176,7 +188,9 @@ function afterInsert(node){
   scheduleSave();
 }
 
-/* 6. 通用弹窗 */
+/* ============================================================
+   6. 通用弹窗
+   ============================================================ */
 const modalMask = $('#modalMask');
 const modalBox  = $('#modalBox');
 function openModal(html){
@@ -191,7 +205,7 @@ modalMask.addEventListener('click', e=>{
 });
 document.addEventListener('keydown', e=>{ if(e.key==='Escape' && modalMask.classList.contains('open')) closeModal(); });
 
-/* 图片更换面板 */
+/* ---------- 图片更换面板（项目图 / 头像） ---------- */
 function imageChangeModal(onConfirm){
   openModal(
     '<h3>更换图片</h3>'+
@@ -243,7 +257,7 @@ document.addEventListener('click', e=>{
   }
 });
 
-/* 项目详情 */
+/* ---------- 项目详情 ---------- */
 document.addEventListener('click', e=>{
   const btn = e.target.closest('[data-detail]');
   if(btn && !editMode){
@@ -266,7 +280,9 @@ document.addEventListener('click', e=>{
   }
 });
 
-/* 7. 一键复制 */
+/* ============================================================
+   7. 一键复制
+   ============================================================ */
 document.addEventListener('click', e=>{
   const btn = e.target.closest('[data-copy]');
   if(!btn) return;
@@ -284,14 +300,16 @@ document.addEventListener('click', e=>{
   }
 });
 
-/* 留言表单 */
+/* ---------- 留言表单（静态演示） ---------- */
 $('#contactForm').addEventListener('submit', e=>{
   e.preventDefault();
   e.target.reset();
   toast('留言功能为前端演示，未连接后端，可直接通过邮箱或电话联系我');
 });
 
-/* 8. 滚动揭示 / 技能条动画 / 导航高亮 */
+/* ============================================================
+   8. 滚动揭示 / 技能条动画 / 导航高亮
+   ============================================================ */
 const revealObserver = new IntersectionObserver(entries=>{
   entries.forEach(en=>{ if(en.isIntersecting){ en.target.classList.add('in'); revealObserver.unobserve(en.target); } });
 },{threshold:.12});
@@ -320,20 +338,23 @@ const navObserver = new IntersectionObserver(entries=>{
 },{rootMargin:'-45% 0px -50% 0px'});
 sections.forEach(s=>navObserver.observe(s));
 
-/* 回到顶部 */
+/* ---------- 回到顶部 ---------- */
 const backTop = $('#backTop');
 window.addEventListener('scroll', ()=>{
   backTop.classList.toggle('show', window.scrollY > 500);
 },{passive:true});
 backTop.addEventListener('click', ()=>window.scrollTo({top:0,behavior:'smooth'}));
 
-/* 9. 序列化 */
+/* ============================================================
+   9. 序列化 / 应用（DOM 为真相源，localStorage 持久化）
+   ============================================================ */
 function serializeState(){
+  const sideName = $('.side-name');
   const avatarImg = $('#avatarBox img');
   return {
     v:1,
     side:{
-      name: $('.side-name').textContent,
+      name: sideName.textContent,
       title: $('.side-title').textContent,
       tagline: $('.side-tagline').textContent,
       location: $('.side-meta [data-field="location"]').textContent,
@@ -408,7 +429,7 @@ function applyState(st){
     return node.outerHTML;
   }).join('');
 
-  /* 技能 */
+  /* 技能：按现有 group 顺序回填 */
   $$('#skillWrap .skill-group').forEach((g, i)=>{
     const list = g.querySelector('[data-skill-group]');
     const rows = (st.skillGroups[i]||[]).map(x=>{
@@ -443,13 +464,15 @@ function applyState(st){
     if(st.contacts[i]!==undefined) el.textContent = st.contacts[i];
   });
 
-  /* 重建后同步 */
+  /* 重建后同步编辑态与观察器 */
   setEditable(document, editMode);
   $$('.reveal').forEach(el=>{ el.classList.add('in'); });
   $$('.skill-fill').forEach(f=>{ f.style.width = f.dataset.level+'%'; });
 }
 
-/* 10. 导出 / 导入 / 恢复默认 */
+/* ============================================================
+   10. 导出 / 导入 / 恢复默认
+   ============================================================ */
 $('#exportBtn').addEventListener('click', ()=>{
   const data = JSON.stringify(serializeState(), null, 2);
   const blob = new Blob([data], {type:'application/json'});
@@ -485,7 +508,9 @@ $('#resetBtn').addEventListener('click', ()=>{
   }
 });
 
-/* 11. 启动 */
+/* ============================================================
+   11. 启动：读取本地数据
+   ============================================================ */
 (function init(){
   try{
     const raw = localStorage.getItem(STORE_KEY);
@@ -493,5 +518,5 @@ $('#resetBtn').addEventListener('click', ()=>{
       const st = JSON.parse(raw);
       if(st && st.v===1){ applyState(st); }
     }
-  }catch(e){}
+  }catch(e){ /* 存储不可用时静默使用默认内容 */ }
 })();
